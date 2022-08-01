@@ -2,46 +2,30 @@ name: Build LLV Docker Image
 on:
   push:
     branches:
-      - "main"
+      - 'main'
 
 env:
-  PROJECT_ID: llv-scheduler # TODO: update Google Cloud project id
-  GAR_LOCATION: eu.gcr.io/llv-scheduler # TODO: update Artifact Registry location
-  SERVICE: llv-scheduler # TODO: update Cloud Run service name
-  REGION: europe-west2
+  PROJECT_ID: llv-scheduler
+  SERVICE: llv-scheduler
 
 jobs:
   build:
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - id: "auth"
-        uses: "google-github-actions/auth@v0"
-        with:
-          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT }}"
-          project_id: "${{ env.PROJECT_ID }}"
       - name: Docker Auth
         id: docker-auth
-        uses: "docker/login-action@v1"
+        uses: 'docker/login-action@v1'
         with:
-          username: "oauth2accesstoken"
-          password: "${{ steps.auth.outputs.access_token }}"
-          registry: "gcr.io"
+          username: 'oauth2accesstoken'
+          password: '${{ steps.auth.outputs.access_token }}'
+          registry: 'gcr.io'
 
       - name: Build and Push Container
         shell: bash
         run: |-
           docker build -t "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}" ./
           docker push "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}"
-
-      - name: Deploy to Cloud Run
-        id: deploy
-        uses: google-github-actions/deploy-cloudrun@v0
-        with:
-          service: ${{ env.SERVICE }}
-          region: ${{ env.REGION }}
-          # NOTE: If using a pre-built image, update the image name here
-          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
